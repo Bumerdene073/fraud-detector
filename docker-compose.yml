@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+
+  mlflow:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    working_dir: /mlflow
+    volumes:
+      - ./mlflow:/mlflow
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "pip install mlflow -q &&
+             mlflow server
+             --backend-store-uri sqlite:///mlflow.db
+             --default-artifact-root /mlflow/artifacts
+             --host 0.0.0.0
+             --port 5000"
+
+  api:
+    build: .
+    container_name: churn-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+    environment:
+      - MODEL_PATH=models/model.pkl
+      - SCALER_PATH=models/scaler.pkl
+    depends_on:
+      - mlflow
